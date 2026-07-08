@@ -12,14 +12,23 @@ function App() {
     salary: "",
   });
 
-  const API_URL = "http://localhost:4000/employees";
+  const API_BASE_URL = (
+    import.meta.env.VITE_API_URL || "https://ems-backend.onrender.com"
+  ).replace(/\/$/, "");
+  const API_URL = `${API_BASE_URL}/employees`;
 
   // FETCH EMPLOYEES
 
   const getEmployees = async () => {
-    const response = await fetch(API_URL);
-    const data = await response.json();
-    setEmployees(data);
+    try {
+      const response = await fetch(API_URL);
+      if (!response.ok) throw new Error("Failed to load employees");
+      const data = await response.json();
+      setEmployees(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      setEmployees([]);
+    }
   };
 
   useEffect(() => {
@@ -52,15 +61,22 @@ function App() {
     const url = editingId ? `${API_URL}/${editingId}` : API_URL;
     const method = editingId ? "PUT" : "POST";
 
-    await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      //headers are the extra information sent with the request. Here with label we sent json data
-      body: JSON.stringify(formData),
-      // The body contains the actual data being sent.
-    });
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          salary: Number(formData.salary),
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to save employee");
+    } catch (error) {
+      console.error("Error saving employee:", error);
+    }
 
     resetForm();
     getEmployees();
@@ -69,7 +85,7 @@ function App() {
   // EDIT EMPLOYEE
 
   const editEmployee = (employee) => {
-    setEditingId(employee.id);
+    setEditingId(employee._id || employee.id);
     setFormData({
       name: employee.name,
       department: employee.department,
@@ -80,9 +96,15 @@ function App() {
   // DELETE EMPLOYEE
 
   const deleteEmployee = async (id) => {
-    await fetch(`${API_URL}/${id}`, {
-      method: "DELETE",
-    });
+    try {
+      const response = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) throw new Error("Failed to delete employee");
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+    }
 
     if (editingId === id) {
       resetForm();
@@ -184,7 +206,7 @@ function App() {
 
       <div className="employee-grid">
         {filteredEmployees.map((employee) => (
-          <div key={employee.id} className="card">
+          <div key={employee._id || employee.id} className="card">
             <h3>{employee.name}</h3>
 
             <p>Department: {employee.department}</p>
@@ -201,7 +223,7 @@ function App() {
 
               <button
                 className="delete-btn"
-                onClick={() => deleteEmployee(employee.id)}
+                onClick={() => deleteEmployee(employee._id || employee.id)}
               >
                 Delete
               </button>
