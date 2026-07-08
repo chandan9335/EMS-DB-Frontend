@@ -13,7 +13,7 @@ function App() {
   });
 
   const API_BASE_URL = (
-    import.meta.env.VITE_API_URL || "https://ems-backend.onrender.com"
+    import.meta.env.VITE_API_URL || "https://ems-db-backend.onrender.com"
   ).replace(/\/$/, "");
   const API_URL = `${API_BASE_URL}/employees`;
 
